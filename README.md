@@ -20,7 +20,7 @@ This project aims to simplify the process of obtaining university information by
 - Improve communication between students and university services.
 
 
-
+![PoliX UI](Images/PoliX_UI.png)
 
 
 ## Technologies Used
