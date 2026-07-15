@@ -139,10 +139,9 @@ Future development of PoliX may include:
 This project was developed for academic and research purposes as part of the Bachelor Thesis in Computer Science at POLIS University.
 
 
-
 ## Author
 
 **Elsa Murati**  
 Bachelor in Computer Science  
 POLIS University  
-Academic Year 2025–2026
+
