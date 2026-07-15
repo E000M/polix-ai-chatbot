@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PoliX</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand-section">
+                <img src="logo_name_nobg.svg" alt="PoliX logo" class="brand-logo">
+                <div class="brand-text">  </div>
+            </div>
+            <button id="loginBtn" class="google-login-btn">
+                <i class="fab fa-google"></i> Login with Google
+            </button>
+        </div>
+    </header>
+
+    <div class="app">
+        <aside class="sidebar">
+            <button class="new-chat" id="newChatBtn">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
+            <div class="history-header">
+                <i class="fas fa-history"></i> Chat History
+                <button id="clearHistoryBtn" class="clear-history-btn" title="Clear all history">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div id="chat-history" class="history-list">
+                <!-- Chat history items will be added here by JavaScript -->
+            </div>
+        </aside>
+
+        <main class="main-area">
+            <div id="messages" class="messages">
+                <div class="msg-row bot">
+                    <div class="avatar">
+                       <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bubble">
+                        Mire se vini ne PoliX! Si mund t'ju ndihmoj sot?
+                        <div class="reactions">
+                            <span class="reaction"><i class="fas fa-thumbs-up"></i></span>
+                            <span class="reaction"><i class="fas fa-thumbs-down"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="composer">
+                <input id="messageInput" placeholder="Shkruaj nje pyetje..." autocomplete="off">
+                <button id="sendBtn" class="send-btn" title="Send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <div class="quick-row">
+                <button class="quick q1" data-q="Cfare programesh bachelor ofron Universiteti Polis?">
+                    <i class="fas fa-graduation-cap"></i> Programet Bachelor
+                </button>
+                <button class="quick q2" data-q="Sa eshte tarifa vjetore e studimeve bachelor?">
+                    <i class="fas fa-money-bill-wave"></i> Tarifat
+                </button>
+                <button class="quick q3" data-q="Si funksionon menyra e aplikimit?">
+                    <i class="fas fa-file-alt"></i> Aplikimi
+                </button>
+                <button class="quick q4" data-q="Cfare dokumentesh duhen per regjistrim?">
+                    <i class="fas fa-folder-open"></i> Dokumentet
+                </button>
+            </div>
+        </main>
+    </div>
+
+<div id="loginModal" class="login-modal">
+    <div class="login-modal-content">
+        <button id="closeLoginModal" class="close-login-modal">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <img src="logo_name_nobg.svg" class="modal-logo">
+
+        <h2>Mire se vini ne PoliX!</h2>
+        <p>Sign in me Google për të vazhduar</p>
+
+        <button id="modalGoogleLoginBtn" class="modal-google-btn">
+            <i class="fab fa-google"></i>
+            Vazhdo me Google
+        </button>
+    </div>
+</div>
+
+
+    <!-- Firebase Google Login and Chat Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5OQcRagseZfp7ftpviMP5egXj7Bi-VH8",
+            authDomain: "polix-3111.firebaseapp.com",
+            projectId: "polix-3111",
+            storageBucket: "polix-3111.firebasestorage.app",
+            messagingSenderId: "897638575008",
+            appId: "1:897638575008:web:be5f649866a94aa3a9d2c5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const loginBtn = document.getElementById("loginBtn");
+        const newChatBtn = document.getElementById("newChatBtn");
+        const sendBtn = document.getElementById("sendBtn");
+        const messageInput = document.getElementById("messageInput");
+        const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+        let currentUser = null;
+
+        // Check if user is already logged in from localStorage
+        function checkLoggedInUser() {
+            const userEmail = localStorage.getItem("userEmail");
+            const userUID = localStorage.getItem("userUID");
+            
+            if (userEmail && userUID) {
+                const username = userEmail.split('@')[0];
+                loginBtn.innerHTML = `<i class="fas fa-user-circle"></i> Hi, ${username}`;
+                loginBtn.classList.add('logged-in');
+                currentUser = { email: userEmail, uid: userUID };
+                loadChatHistory();
+            }
+        }
+
+        async function handleLogin() {
+            try {
+                console.log("Starting Google login...");
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                console.log("User logged in:", user.email);
+
+                // Get ID token
+                const idToken = await user.getIdToken(true);
+                console.log("Token received (first 20 chars):", idToken.substring(0, 20) + "...");
+
+                // Send to your backend
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({ idToken: idToken })
+                });
+
+                console.log("Response status:", res.status);
+                const data = await res.json();
+                console.log("Backend response:", data);
+
+                if (res.ok && data.status === "success") {
+                    // Update button to show user info
+                    const username = data.email.split('@')[0];
+                    loginBtn.innerHTML = `<i class="fas fa-user-circle"></i> Hi, ${username}`;
+                    loginBtn.classList.add('logged-in');
+
+                    // Store user info
+                    localStorage.setItem("userEmail", data.email);
+                    localStorage.setItem("userUID", data.uid);
+                    localStorage.setItem("username", username);
+                    currentUser = { email: data.email, uid: data.uid };
+
+
+                    // Show welcome message in chat
+                    addMessageToChat(`Mire se vini ${username}! Tani mund te ruani historine e bisedave tuaja.`, 'bot');
+
+                    // Load user's chat history
+                    loadChatHistory();
+                } else {
+                    alert("Login failed: " + (data.message || data.error || "Unknown error"));
+                }
+            } catch (error) {
+                console.error("Firebase login error:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
+                
+                if (error.code === 'auth/unauthorized-domain') {
+                    alert("Error: This domain (127.0.0.1) is not authorized. Please add it to Firebase Console → Authentication → Authorized domains.");
+                } else {
+                    alert("Login failed: " + error.message);
+                }
+            }
+        }
+
+        function showUserMenu() {
+            const userEmail = localStorage.getItem("userEmail");
+            const username = localStorage.getItem("username");
+            
+            if (confirm(`Logged in as: ${userEmail}\n\nDo you want to logout?`)) {
+                handleLogout();
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                localStorage.removeItem("userEmail");
+                localStorage.removeItem("userUID");
+                localStorage.removeItem("username");
+                
+                loginBtn.innerHTML = '<i class="fab fa-google"></i> Login with Google';
+                loginBtn.classList.remove('logged-in');
+                currentUser = null;
+                
+                addMessageToChat("Ju jeni shkyçur. Identifikohuni perseri per te ruajtur historine e bisedave.", 'bot');
+                clearChatHistory();
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        }
+
+        // Function to format date for grouping
+        function getDateGroup(timestamp) {
+            const date = new Date(timestamp);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            // Set time to 00:00:00 for accurate comparison
+            const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+            if (dateStart.getTime() === todayStart.getTime()) {
+                return "Today";
+            } else if (dateStart.getTime() === yesterdayStart.getTime()) {
+                return "Yesterday";
+            } else {
+                // Check if within last 7 days
+                const oneWeekAgo = new Date(today);
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                if (date >= oneWeekAgo) {
+                    return "Last Week";
+                } else {
+                    // Check if within last 30 days
+                    const oneMonthAgo = new Date(today);
+                    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+                    if (date >= oneMonthAgo) {
+                        return "Last Month";
+                    } else {
+                        return "Older";
+                    }
+                }
+            }
+        }
+
+        // Function to format time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        // Function to format date for display
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            // Set time to 00:00:00 for accurate comparison
+            const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+            if (dateStart.getTime() === todayStart.getTime()) {
+                return `Today, ${formatTime(timestamp)}`;
+            } else if (dateStart.getTime() === yesterdayStart.getTime()) {
+                return `Yesterday, ${formatTime(timestamp)}`;
+            } else {
+                return date.toLocaleDateString('sq-AL', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        }
+
+        // Chat functionality
+        function addMessageToChat(message, sender) {
+            const messagesDiv = document.getElementById("messages");
+            const msgRow = document.createElement("div");
+            msgRow.className = `msg-row ${sender}`;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+
+            if (sender === 'user') {
+                avatar.innerHTML = '<i class="fas fa-user"></i>';
+                bubble.textContent = message;
+                bubble.classList.add('user');
+            } else {
+                avatar.innerHTML = '<i class="fas fa-robot"></i>';
+                bubble.innerHTML = message + `
+                    <div class="reactions">
+                        <span class="reaction"><i class="fas fa-thumbs-up"></i></span>
+                        <span class="reaction"><i class="fas fa-thumbs-down"></i></span>
+                    </div>`;
+            }
+
+            msgRow.appendChild(avatar);
+            msgRow.appendChild(bubble);
+            messagesDiv.appendChild(msgRow);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Load and display chat history with date grouping
+        function loadChatHistory() {
+            const historyDiv = document.getElementById("chat-history");
+            const history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+
+            if (history.length === 0) {
+                historyDiv.innerHTML = '<div class="no-history">Nuk ka historik te ruajtur</div>';
+                return;
+            }
+
+            // Sort by timestamp (newest first)
+            history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            // Group by date
+            const groups = {
+                "Today": [],
+                "Yesterday": [],
+                "Last Week": [],
+                "Last Month": [],
+                "Older": []
+            };
+
+            history.forEach(chat => {
+                const group = getDateGroup(chat.timestamp);
+                groups[group].push(chat);
+            });
+
+            // Display grouped history
+            historyDiv.innerHTML = "";
+            Object.keys(groups).forEach(groupName => {
+                if (groups[groupName].length > 0) {
+                    // Create group header
+                    const groupHeader = document.createElement("div");
+                    groupHeader.className = "history-group-header";
+                    groupHeader.innerHTML = `<i class="fas fa-folder"></i> ${groupName} <span class="group-count">${groups[groupName].length}</span>`;
+                    historyDiv.appendChild(groupHeader);
+
+                    // Add chat items for this group
+                    groups[groupName].forEach(chat => {
+                        const historyItem = document.createElement("div");
+                        historyItem.className = "history-item";
+                        historyItem.innerHTML = `
+                            <div class="history-item-content">
+                                <div class="history-question">
+                                    <i class="fas fa-comment"></i> ${chat.question.substring(0, 40)}${chat.question.length > 40 ? '...' : ''}
+                                </div>
+                                <div class="history-time">${formatTime(chat.timestamp)}</div>
+                            </div>
+                        `;
+                        
+                        historyItem.onclick = () => {
+                            // Load this chat
+                            document.getElementById('messages').innerHTML = '';
+                            addMessageToChat(chat.question, 'user');
+                            addMessageToChat(chat.answer, 'bot');
+                        };
+                        
+                        historyDiv.appendChild(historyItem);
+                    });
+                }
+            });
+        }
+
+        // Clear all chat history
+        function clearAllHistory() {
+            if (confirm("A jeni i sigurte qe doni te fshini te gjithe historine e bisedave?")) {
+                localStorage.removeItem("chatHistory");
+                loadChatHistory();
+            }
+        }
+
+        // Clear chat history UI
+        function clearChatHistory() {
+            document.getElementById("chat-history").innerHTML = '<div class="no-history">Nuk ka historik te ruajtur</div>';
+        }
+
+        // Save chat to localStorage with timestamp
+        function saveChatToLocalStorage(question, answer) {
+            const history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+            history.unshift({
+                question: question,
+                answer: answer,
+                timestamp: new Date().toISOString(),
+                date: new Date().toDateString()
+            });
+
+            // Keep only last 100 chats to prevent localStorage overflow
+            if (history.length > 100) {
+                history.splice(100); // Remove oldest entries beyond 100
+            }
+
+            localStorage.setItem("chatHistory", JSON.stringify(history));
+            loadChatHistory();
+        }
+
+        // Send message to backend
+        async function sendMessageToBackend(question) {
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error("Error sending message:", error);
+                return {
+                    status: "error",
+                    answer: "Gabim ne lidhje me serverin. Ju lutem provoni perseri."
+                };
+            }
+        }
+
+        // Send message functionality
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                // Add user message to chat
+                addMessageToChat(message, 'user');
+                messageInput.value = '';
+
+                // Show typing indicator
+                const messagesDiv = document.getElementById("messages");
+                const typingIndicator = document.createElement("div");
+                typingIndicator.className = "msg-row bot";
+                typingIndicator.innerHTML = `
+                    <div class="avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="bubble typing">
+                        <i class="fas fa-circle typing-dot"></i>
+                        <i class="fas fa-circle typing-dot"></i>
+                        <i class="fas fa-circle typing-dot"></i>
+                    </div>
+                `;
+                messagesDiv.appendChild(typingIndicator);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                // Send to backend and get response
+                const response = await sendMessageToBackend(message);
+
+                // Remove typing indicator
+                messagesDiv.removeChild(typingIndicator);
+
+                // Add bot response
+                addMessageToChat(response.answer || "Nuk e kuptova pyetjen tuaj.", 'bot');
+
+                // Save to history if user is logged in
+                if (currentUser) {
+                    saveChatToLocalStorage(message, response.answer);
+                }
+            }
+        }
+
+        // Event Listeners
+        const loginModal = document.getElementById("loginModal");
+const closeLoginModal = document.getElementById("closeLoginModal");
+const modalGoogleLoginBtn = document.getElementById("modalGoogleLoginBtn");
+
+loginBtn.addEventListener("click", () => {
+
+    if (currentUser) {
+        showUserMenu();
+        return;
+    }
+    loginModal.style.display = "flex";
+});
+
+closeLoginModal.addEventListener("click", () => {
+    loginModal.style.display = "none";
+});
+
+window.addEventListener("click", (e) => {
+    if (e.target === loginModal) {
+        loginModal.style.display = "none";
+    }
+});
+
+modalGoogleLoginBtn.addEventListener("click", async () => {
+    loginModal.style.display = "none";
+    await handleLogin();
+});
+
+        newChatBtn.addEventListener("click", () => {
+            document.getElementById('messages').innerHTML = `
+                <div class="msg-row bot">
+                    <div class="avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="bubble">
+                        Mire se vini ne PoliX! Si mund t'ju ndihmoj sot?
+                        <div class="reactions">
+                            <span class="reaction"><i class="fas fa-thumbs-up"></i></span>
+                            <span class="reaction"><i class="fas fa-thumbs-down"></i></span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+
+        sendBtn.addEventListener("click", sendMessage);
+
+        messageInput.addEventListener("keypress", (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        clearHistoryBtn.addEventListener("click", clearAllHistory);
+
+        // Quick buttons
+        document.querySelectorAll('.quick').forEach(button => {
+            button.addEventListener('click', () => {
+                const question = button.getAttribute('data-q');
+                messageInput.value = question;
+                messageInput.focus();
+            });
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            checkLoggedInUser();
+            if (!currentUser) {
+                loadChatHistory();
+            }
+        });
+    
+</script>
+
+</body>
+</html>

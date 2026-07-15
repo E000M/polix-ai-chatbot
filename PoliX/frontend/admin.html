@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="logo_admin.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>PoliX Admin Dashboard</title>
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <h2>PoliX<span class="logo-dot">.</span></h2>
+                <p>Admin Dashboard</p>
+            </div>
+
+            <div class="sidebar-menu">
+
+                <button class="menu-item active">
+                    <span class="menu-icon">⊞</span>
+                    Dataset Management
+                </button>
+
+            </div>
+
+        </aside>
+
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+            <!-- TOPBAR -->
+
+            <div class="topbar">
+
+                <div>
+                    <h1>Dataset Management</h1>
+                    <p>Manage chatbot knowledge base</p>
+                </div>
+
+                <div class="topbar-actions">
+
+                    <div class="search-box">
+
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="Search by topic or category..."
+                        />
+                    </div>
+
+                    <button id="addBtn">
+                        + Add Entry
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- FORM -->
+
+            <div id="formContainer"
+                 class="form-container hidden">
+
+                <h2 id="formTitle">
+                    Add Dataset Entry
+                </h2>
+
+                <div class="form-grid">
+
+                    <input
+                        type="text"
+                        id="topic"
+                        placeholder="Topic"
+                    />
+
+                    <input
+                        type="text"
+                        id="category"
+                        placeholder="Category"
+                    />
+
+                </div>
+
+                <textarea
+                    id="questions"
+                    placeholder="Questions (one per line)"
+                ></textarea>
+
+                <textarea
+                    id="keywords"
+                    placeholder="Keywords (comma separated)"
+                ></textarea>
+
+                <textarea
+                    id="answer"
+                    placeholder="Answer (Albanian)"
+                ></textarea>
+
+                <textarea
+                    id="answer_en"
+                    placeholder="Answer (English)"
+                ></textarea>
+
+                <div class="form-buttons">
+
+                    <button id="saveBtn">
+                        Save
+                    </button>
+
+                    <button id="cancelBtn">
+                        Cancel
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- TABLE -->
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Topic</th>
+                            <th>Category</th>
+                            <th>Questions</th>
+                            <th>Actions</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="datasetContainer">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+
+
+
+        </main>
+
+    </div>
+
+    <script src="admin.js"></script>
+
+</body>
+</html>
