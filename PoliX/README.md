@@ -19,10 +19,6 @@ This project aims to simplify the process of obtaining university information by
 - Create a scalable chatbot system for future institutional use.
 - Improve communication between students and university services.
 
-## User Interface
-
-![PoliX UI](PoliX/Images/PoliX_UI.png)
-
 
 ## Technologies Used
 
